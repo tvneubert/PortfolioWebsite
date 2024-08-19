@@ -1,0 +1,24 @@
+.cube {
+    width: 200px;
+    height: 200px;
+    transform-style: preserve-3d;
+    transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg);
+    transition: transform 0.1s ease-out;
+    z-index: 100;
+}
+
+.face {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background-color: rgba(187, 0, 255, 0.423);
+    border: 2px solid #333;
+}
+
+/* Positionierung der Seiten des Würfels */
+.front  { transform: rotateY(0deg) translateZ(100px); }
+.back   { transform: rotateY(180deg) translateZ(100px); }
+.left   { transform: rotateY(-90deg) translateZ(100px); }
+.right  { transform: rotateY(90deg) translateZ(100px); }
+.top    { transform: rotateX(90deg) translateZ(100px); }
+.bottom { transform: rotateX(-90deg) translateZ(100px); }
