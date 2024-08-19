@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cube generieren
     function initializeCube() {
-        const cube = document.querySelector('.cube');  // Korrigiert: '.cube'
+        const cube = document.querySelector('.cube'); 
         let scrollRotation = 0;
 
         window.addEventListener('scroll', () => {
