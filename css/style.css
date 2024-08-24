@@ -1,11 +1,11 @@
 body {
     margin: 0;
-    height: 200vh; /* Erhöhte Höhe für Scrollen */
+    height: 100vh; /* Erhöhte Höhe für Scrollen */
     overflow-x: hidden;
 }
 
 .container {
-    height: 100vh; /* Volle Höhe für die Cube-Container */
+    height: 500vh; /* Volle Höhe für die Cube-Container */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -28,8 +28,27 @@ body {
     position: absolute;
     width: 10px;
     height: 10px;
-    background-color: red; /* Wird durch JS überschrieben */
     opacity: 0.8;
     transform-style: preserve-3d;
+    border-radius: 3px;
+}
+
+.footer {
+    background: #33333300;
+    height: 50px;
+    color: #fff;
+    bottom: -50px; /* Anfangs außerhalb des Sichtbereichs */
+    width: 100%;
+    z-index: 1000;
+    position: fixed; /* Starten Sie den Footer in der Position fixed */
+    overflow: hidden; /* Verhindert Überlauf der Pixel */
+}
+
+.footer-pixel {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #00FF00; /* Farbe der Pixel im Footer */
+    opacity: 0.8;
     border-radius: 3px;
 }
