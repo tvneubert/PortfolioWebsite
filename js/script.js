@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadComponent('cube', 'components/cube.html', 'css/cube.css');
     loadComponent('footer', 'components/footer.html', 'css/footer.css');
 
+    // Funktion zum Laden von HTML-Dateien
     function loadComponent(id, file, cssFile) {
         fetch(file)
             .then(response => response.text())
@@ -16,14 +17,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadCSS(cssFile);
                 }
 
-                if (id === 'pixel-background') {
-                    initializePixels();
-                }
-                if (id === 'cube') {
-                    initializeCube();
-                }
-                if (id === 'footer') {
-                    moveFooter();
+                switch (id) {
+                    case 'pixel-background':
+                        initializePixels();
+                        break;
+                    case 'cube':
+                        initializeCube();
+                        break;
+                    case 'footer':
+                        moveFooter();
+                        break;
+                    default:
+                        break;
                 }
             });
     }
@@ -50,55 +55,96 @@ document.addEventListener('DOMContentLoaded', () => {
     function initializePixels() {
         const pixelContainer = document.getElementById('pixel-container');
         const numberOfPixels = 100; // Anzahl der Pixel kann hier angepasst werden
-        const pixelSize = 10;
-        const columns = Math.floor(window.innerWidth / pixelSize);
-        const rows = Math.floor(window.innerHeight / pixelSize);
-
 
         // Pixel erstellen
-        createPixels();
+        const pixels = createPixels(pixelContainer, numberOfPixels);
+
+        // FPS überprüfen und Anzahl der Pixel anpassen	
+        adjustPixelCount(pixels);
 
         // Scroll-Event für Pixel-Bewegung
         let lastScrollTop = 0;
 
         window.addEventListener('scroll', () => {
-            const pixels = Array.from(document.getElementsByClassName('pixel'));
             const scrollTop = window.scrollY || document.documentElement.scrollTop;
             const scrollDirection = scrollTop > lastScrollTop ? 1 : -1; // 1 für nach unten, -1 für nach oben
             lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // Für Mobile oder negative Werte
-            pixels.forEach(pixel => {
-                let top = parseFloat(pixel.style.top);
-                const speed = parseFloat(pixel.getAttribute('data-speed')); // Verschiedene Geschwindigkeiten
-                top += speed * scrollDirection;
 
-                if (top > window.innerHeight) {
+            pixels.forEach(pixel => {
+                const speed = pixel.speed;
+                pixel.top += speed * scrollDirection;
+
+                if (pixel.top > window.innerHeight) {
                     // Wenn der Pixel unten angekommen ist, nach oben zurücksetzen
-                    top = -11; // -10px damit er leicht außerhalb des sichtbaren Bereichs beginnt
-                } else if (top < -11) {
+                    pixel.top = -11; // <-11px damit er leicht außerhalb des sichtbaren Bereichs beginnt
+                } else if (pixel.top < -11) {
                     // Wenn der Pixel oben angekommen ist, nach unten zurücksetzen
-                    top = window.innerHeight;
+                    pixel.top = window.innerHeight;
                 }
-                pixel.style.top = top + 'px';
+
+                pixel.element.style.top = pixel.top + 'px';
+
             });
         });
+    }
 
-        // Pixel erstellen
-        function createPixels() {
-            let createdPixels = 0;
-            for (let i = 0; i < columns && createdPixels <= numberOfPixels; i++) {
-                for (let j = 0; j < rows && createdPixels <= numberOfPixels; j++) {
-                    const pixel = document.createElement('div');
-                    pixel.className = 'pixel';
-                    pixel.style.position = 'absolute';
-                    pixel.style.top = `${Math.random() * window.innerHeight}px`;
-                    pixel.style.left = `${Math.random() * window.innerWidth}px`;
-                    pixel.style.backgroundColor = getRandomColor();
-                    pixel.setAttribute('data-speed', (Math.random() * 100 + 1).toFixed(2)); // Geschwindigkeit zwischen 1 und 3
-                    pixelContainer.appendChild(pixel);
-                    createdPixels++;
+    // Pixel erstellen
+    function createPixels(pixelContainer, numberOfPixels) {
+        const pixels = [];
+
+        for (let i = 0; i < numberOfPixels; i++) {
+            const pixel = document.createElement('div');
+            pixel.className = 'pixel';
+            pixel.style.position = 'absolute';
+            pixel.style.backgroundColor = getRandomColor();
+
+            const top = Math.random() * window.innerHeight;
+            const left = Math.random() * window.innerWidth;
+            const speed = (Math.random() * 100 + 1).toFixed(2);
+
+            pixel.style.top = top + 'px';
+            pixel.style.left = left + 'px';
+
+            pixels.push({ element: pixel, top, left, speed });
+            pixelContainer.appendChild(pixel);
+        }
+
+        return pixels;
+    }
+
+    //Anzahl Pixel auf Endgerät anpassen
+    function adjustPixelCount(pixels) {
+        const tragetFPS = 60;
+        let lastTime = performance.now();
+        let frame = 0;
+
+        function checkFPS() {
+            frame++;
+            const currenTime = performance.now();
+            const elapsed = currenTime - lastTime;
+            if (elapsed > 1000) {
+                const fps = frame * 1000 / elapsed;
+                console.log(`FPS: ${fps}`);
+                if (fps < tragetFPS) {
+                    // Bildwiderholungsrate ist zu niedrig, Anzahl Pixel reduzieren
+                    const newNumberOfPixels = Math.max(pixels.length - 1, 0);
+                    console.log(`Reducing pixel count to ${newNumberOfPixels}`);
+                    removeExcessPixels(pixels, newNumberOfPixels);
                 }
-
+                frame;
+                lastTime = currenTime;
             }
+            requestAnimationFrame(checkFPS);
+        }
+        requestAnimationFrame(checkFPS);
+    }
+
+    // Überzählige Pixel entfernen
+    function removeExcessPixels(pixels, newNumberOfPixels) {
+        const excess = pixels.length - newNumberOfPixels;
+        for(let i = 0; i < excess; i++) {
+            const pixel = pixels.pop();
+            pixel.element.remove();
         }
     }
 
@@ -107,47 +153,80 @@ document.addEventListener('DOMContentLoaded', () => {
         const cube = document.querySelector('.cube');
         const container = document.querySelector('.container');
         let scrollRotation = 0;
+        let maxScroll = document.body.scrollHeight - window.innerHeight;
+        let ticking = false;
 
-        window.addEventListener('scroll', () => {
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const scrollPercent = window.scrollY / maxScroll;
+        function updateElements(scrollPercent) {
             scrollRotation = scrollPercent * 360;
             cube.style.transform = `rotateX(${scrollRotation}deg) rotateY(${scrollRotation}deg)`;
             container.style.transform = `translateY(${scrollPercent * 100}vh)`;
+        }
+
+        function onScoll() {
+            if(!ticking) {
+                requestAnimationFrame(() => {
+                    const scrollPercent = window.scrollY / maxScroll;
+                    updateElements(scrollPercent);
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }
+
+        window.addEventListener('scroll', onScoll, { passive: true });
+        window.addEventListener('resize', () => {
+            maxScroll = document.body.scrollHeight - window.innerHeight;
         });
+
+        onScoll();
     }
 
     function moveFooter() {
         const footer = document.querySelector('.footer');
         const footerHeight = footer.offsetHeight;
-        const windowHeight = window.innerHeight;
         const initialPosition = -footerHeight;
         const visiblePosition = 0;
-        const slowFactor = 40; // Faktor, um die Geschwindigkeit des Footers zu reduzieren
+        const slowFactor = 20; // Je größer der Wert, desto langsamer bewegt sich der Footer
+
+        let ticking = false;
+        let lastScrollY = 0;
+        let footerPosition = initialPosition;
 
         footer.style.bottom = `${initialPosition}px`;
 
-        window.addEventListener('scroll', () => {
-            const scrollY = window.scrollY;
+        function updateFooter() {
+            const windowHeight = window.innerHeight;
             const maxScroll = document.body.scrollHeight - windowHeight;
+            const scrollY = window.scrollY;
 
-            // Berechnung des Footer-Positionswerts
-            let footerPosition = Math.min(visiblePosition, initialPosition + scrollY / slowFactor);
+            // Berechnung der Footer-Position
+            footerPosition = Math.min(visiblePosition, initialPosition + scrollY / slowFactor);
 
-            // Setzen der Position des Footers
+            // Setzen der Footer-Position
             footer.style.bottom = `${footerPosition}px`;
 
-            // Wenn der Footer sichtbar wird, fülle ihn relativ zum Scroll Event mit Pixeln
+            // Wenn der Footer sichtbar wird, fülle ihn relativ zum Scroll-Event mit Pixeln
             updateFooterPixels(footer, scrollY, maxScroll);
 
             // Wenn der Footer komplett sichtbar ist, bleibt er fixiert am unteren Rand
             if (scrollY >= maxScroll - footerHeight) {
-                footer.style.position = 'fixed';
                 footer.style.bottom = `${visiblePosition}px`;
-            } else {
-                footer.style.position = 'fixed';
             }
-        });
+
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', () => {
+            lastScrollY = window.scrollY;
+            if (!ticking) {
+                requestAnimationFrame(updateFooter);
+                ticking = true;
+            }
+
+        }, { passive: true });
+
+        // Initialisierung
+        updateFooter();
     }
 
     function updateFooterPixels(footer, scrollY) {
@@ -212,7 +291,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lastScrollY = scrollY;
     }
-
-    let lastScrollY = 0; // Variable, um die letzte Scrollposition zu speichern
 
 });

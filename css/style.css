@@ -1,11 +1,11 @@
 body {
     margin: 0;
-    height: 100vh; /* Erhöhte Höhe für Scrollen */
+    height: 500vh; /* Erhöhte Höhe für Scrollen */
     overflow-x: hidden;
 }
 
 .container {
-    height: 500vh; /* Volle Höhe für die Cube-Container */
+    height: 100vh; /* Volle Höhe für die Cube-Container */
     display: flex;
     justify-content: center;
     align-items: center;
