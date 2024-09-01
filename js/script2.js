@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const components = [
-        { id: 'header', html: 'components/header.html', css: 'css/header.css' },
+        { id: 'header', html: 'components/header.html', css: 'css/header.css', initFunc: initializeHeader },
         { id: 'pixel-background', html: 'components/pixel-background.html', initFunc: initializePixels },
         { id: 'cube', html: 'components/cube.html', css: 'css/cube.css', initFunc: initializeCube },
         { id: 'footer', html: 'components/footer.html', css: 'css/footer.css', initFunc: initializeFooter }
@@ -234,4 +234,76 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
     }
+
+    function initializeHeader() {
+        const progressBar = document.querySelector('.progress-bar');
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.desktop-nav a');
+        const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+    
+        if (!progressBar || !sections.length || !navLinks.length) {
+            console.error('Header components are missing.');
+            return;
+        }
+    
+        function throttle(func, limit = 16) {
+            let inThrottle;
+            return function() {
+                const args = arguments;
+                const context = this;
+                if (!inThrottle) {
+                    func.apply(context, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        }
+    
+        function updateProgressBar() {
+            const scrollPosition = window.scrollY;
+            const pageHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollPosition / pageHeight) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+    
+        function highlightCurrentSection() {
+            let currentSectionId = '';
+    
+            sections.forEach((section) => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+    
+                if (window.scrollY >= sectionTop - sectionHeight / 3) {
+                    currentSectionId = section.getAttribute('id');
+                }
+            });
+    
+            navLinks.forEach((link) => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-section') === currentSectionId) {
+                    link.classList.add('active');
+                }
+            });
+    
+            mobileNavItems.forEach((item, index) => {
+                const sectionId = sections[index].getAttribute('id');
+                item.classList.remove('active');
+                if (sectionId === currentSectionId) {
+                    item.classList.add('active');
+                }
+            });
+        }
+    
+        const handleScroll = throttle(() => {
+            requestAnimationFrame(() => {
+                updateProgressBar();
+                highlightCurrentSection();
+            });
+        });
+    
+        window.addEventListener('scroll', handleScroll);
+        handleScroll();  // Initial run to set everything up
+    }
+     
+       
 });

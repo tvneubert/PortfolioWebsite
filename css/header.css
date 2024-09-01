@@ -1,28 +1,108 @@
-.navbar {
-    background: #333;
-    color: #fff;
-    padding: 1rem;
-    position: fixed;
+.glassmorphism-header {
+    position: sticky;
     top: 0;
-    width: 100%;
     z-index: 1000;
+    width: 100%;
+    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-nav ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+.progress-bar {
+    height: 5px;
+    width: 0;
+    background: linear-gradient(to right, red, yellow, green, blue);
+    transition: width 0.2s ease;
+}
+
+.desktop-nav, .mobile-nav {
     display: flex;
     justify-content: space-around;
+    align-items: center;
+    margin-top: 10px;
+    width: 100%;
 }
 
-nav ul li a {
+.desktop-nav a {
     color: #fff;
     text-decoration: none;
-    padding: 10px 20px;
+    padding: 10px;
+    transition: color 0.3s ease;
 }
 
-nav ul li a:hover {
-    background-color: #575757;
-    border-radius: 5px;
+.desktop-nav a.active {
+    color: #ff7b00;
+}
+
+.mobile-nav {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mobile-nav-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.segment-indicator {
+    width: 10px;
+    height: 10px;
+    background-color: #ff7b00;
+    border-radius: 2px;
+    margin-right: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.segment-title {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .desktop-nav {
+        display: none;
+    }
+
+    .mobile-nav {
+        display: flex;
+    }
+
+    .mobile-nav-item .segment-title {
+        transform: rotateX(90deg);
+        transform-origin: top;
+        transition: transform 0.3s ease, background-color 0.3s ease;
+    }
+
+    .mobile-nav-item.active .segment-title {
+        transform: rotateX(0deg);
+    }
+}
+
+.section {
+    height: 100vh;
+    padding: 20px;
+    background: linear-gradient(45deg, #f3ec78, #af4261);
+    color: #fff;
+}
+
+#about {
+    background: linear-gradient(45deg, #FF512F, #F09819);
+}
+
+#projects {
+    background: linear-gradient(45deg, #00c6ff, #0072ff);
+}
+
+#experience {
+    background: linear-gradient(45deg, #f12711, #f5af19);
+}
+
+#resume {
+    background: linear-gradient(45deg, #fc00ff, #00dbde);
 }
