@@ -242,7 +242,7 @@ function initializeHeader() {
         return;
     }
 
-    header.style.height = '100px';
+    header.style.height = '80px';
     const headerHeight = header.offsetHeight;
     const headerWidth = header.offsetWidth;
     const pixelSize = 10;
