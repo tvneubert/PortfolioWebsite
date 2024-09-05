@@ -235,75 +235,111 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function initializeHeader() {
-        const progressBar = document.querySelector('.progress-bar');
-        const sections = document.querySelectorAll('.section');
-        const navLinks = document.querySelectorAll('.desktop-nav a');
-        const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
-    
-        if (!progressBar || !sections.length || !navLinks.length) {
-            console.error('Header components are missing.');
-            return;
-        }
-    
-        function throttle(func, limit = 16) {
-            let inThrottle;
-            return function() {
-                const args = arguments;
-                const context = this;
-                if (!inThrottle) {
-                    func.apply(context, args);
-                    inThrottle = true;
-                    setTimeout(() => inThrottle = false, limit);
-                }
-            };
-        }
-    
-        function updateProgressBar() {
-            const scrollPosition = window.scrollY;
-            const pageHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const progress = (scrollPosition / pageHeight) * 100;
-            progressBar.style.width = `${progress}%`;
-        }
-    
-        function highlightCurrentSection() {
-            let currentSectionId = '';
-    
-            sections.forEach((section) => {
-                const sectionTop = section.offsetTop;
-                const sectionHeight = section.clientHeight;
-    
-                if (window.scrollY >= sectionTop - sectionHeight / 3) {
-                    currentSectionId = section.getAttribute('id');
-                }
-            });
-    
-            navLinks.forEach((link) => {
-                link.classList.remove('active');
-                if (link.getAttribute('data-section') === currentSectionId) {
-                    link.classList.add('active');
-                }
-            });
-    
-            mobileNavItems.forEach((item, index) => {
-                const sectionId = sections[index].getAttribute('id');
-                item.classList.remove('active');
-                if (sectionId === currentSectionId) {
-                    item.classList.add('active');
-                }
-            });
-        }
-    
-        const handleScroll = throttle(() => {
-            requestAnimationFrame(() => {
-                updateProgressBar();
-                highlightCurrentSection();
-            });
-        });
-    
-        window.addEventListener('scroll', handleScroll);
-        handleScroll();  // Initial run to set everything up
+function initializeHeader() {
+    const header = document.querySelector('.glassmorphism-header');
+    if (!header) {
+        console.error('Header element not found');
+        return;
     }
+
+    header.style.height = '100px';
+    const headerHeight = header.offsetHeight;
+    const headerWidth = header.offsetWidth;
+    const pixelSize = 10;
+    const disappearThreshold = headerHeight - 20;
+    const fullDisappearThreshold = headerHeight - 10;
+    const pixels = [];
+
+    const columns = Math.floor(headerWidth / pixelSize);
+    const rows = Math.floor(headerHeight / pixelSize);
+
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < columns; x++) {
+            const pixel = createPixel(header, { 
+                top: y * pixelSize, 
+                left: x * pixelSize,
+                size: pixelSize,
+                isFooterPixel: true,
+                color: getRandomColor()
+            });
+
+            pixel.element.dataset.originalTop = pixel.top;
+            pixel.element.dataset.originalLeft = pixel.left;
+            pixel.element.dataset.state = 'static';
+            pixels.push(pixel);
+        }
+    }
+
+    let lastScrollY = window.scrollY;
+    let scrollIntensity = 0;
+    let scrollDirection = 0;
+
+    function updateHeaderPixels() {
+        pixels.forEach(pixel => {
+            const state = pixel.element.dataset.state;
+            const scrollFactor = scrollIntensity;
+
+            if (scrollDirection > 0 && state === 'static' && Math.random() < 0.02 * scrollFactor) {
+                pixel.element.dataset.state = 'moving';
+                pixel.speed = (1 + Math.random()).toString();
+            }
+
+            if (scrollDirection < 0 && state !== 'static' && Math.random() < 0.01 * scrollFactor) {
+                pixel.element.dataset.state = 'returning';
+                pixel.element.style.opacity = '1';
+            }
+
+            if (state === 'moving' || state === 'returning') {
+                let vy = parseFloat(pixel.speed);
+                let y = parseFloat(pixel.element.style.top);
+
+                if (state === 'returning') {
+                    const targetY = parseFloat(pixel.element.dataset.originalTop);
+                    vy = (targetY - y) * 0.1;
+                    
+                    if (Math.abs(y - targetY) < 0.5) {
+                        pixel.element.style.top = `${targetY}px`;
+                        pixel.element.dataset.state = 'static';
+                        vy = 0;
+                    }
+                } else {
+                    vy += 0.05;
+                }
+
+                y += vy;
+
+                if (y > disappearThreshold && y <= fullDisappearThreshold) {
+                    const fadeProgress = (y - disappearThreshold) / (fullDisappearThreshold - disappearThreshold);
+                    pixel.element.style.opacity = (1 - fadeProgress).toString();
+                } else if (y > fullDisappearThreshold) {
+                    pixel.element.style.opacity = '0';
+                    pixel.element.dataset.state = 'hidden';
+                }
+
+                pixel.element.style.top = `${y}px`;
+                pixel.speed = vy.toString();
+            }
+        });
+        requestAnimationFrame(updateHeaderPixels);
+    }
+
+    updateHeaderPixels();
+
+    window.addEventListener('scroll', () => {
+        const currentScrollY = window.scrollY;
+        const scrollDelta = currentScrollY - lastScrollY;
+        
+        scrollDirection = Math.sign(scrollDelta);
+        scrollIntensity = Math.min(Math.abs(scrollDelta) / 10, 5);
+        
+        setTimeout(() => {
+            scrollIntensity = Math.max(scrollIntensity - 0.5, 0);
+            if (scrollIntensity === 0) scrollDirection = 0;
+        }, 100);
+
+        lastScrollY = currentScrollY;
+    });
+}
      
        
 });

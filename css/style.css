@@ -48,7 +48,6 @@ body {
     position: absolute;
     width: 10px;
     height: 10px;
-    background-color: #00FF00; /* Farbe der Pixel im Footer */
     opacity: 0.8;
     border-radius: 3px;
 }
