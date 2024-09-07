@@ -235,111 +235,127 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-function initializeHeader() {
-    const header = document.querySelector('.glassmorphism-header');
-    if (!header) {
-        console.error('Header element not found');
-        return;
-    }
+    function initializeHeader() {
+        const header = document.querySelector('.glassmorphism-header');
+        const pixelContainer = document.querySelector('.header-pixel-container');
 
-    header.style.height = '80px';
-    const headerHeight = header.offsetHeight;
-    const headerWidth = header.offsetWidth;
-    const pixelSize = 10;
-    const disappearThreshold = headerHeight - 20;
-    const fullDisappearThreshold = headerHeight - 10;
-    const pixels = [];
-
-    const columns = Math.floor(headerWidth / pixelSize);
-    const rows = Math.floor(headerHeight / pixelSize);
-
-    for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < columns; x++) {
-            const pixel = createPixel(header, { 
-                top: y * pixelSize, 
-                left: x * pixelSize,
-                size: pixelSize,
-                isFooterPixel: true,
-                color: getRandomColor()
-            });
-
-            pixel.element.dataset.originalTop = pixel.top;
-            pixel.element.dataset.originalLeft = pixel.left;
-            pixel.element.dataset.state = 'static';
-            pixels.push(pixel);
+        if (!header || !pixelContainer) {
+            console.error('Header oder Pixel-Container-Element nicht gefunden');
+            return;
         }
+
+        header.style.height = '80px';
+        const headerHeight = header.offsetHeight;
+        const headerWidth = header.offsetWidth;
+
+        // Positionieren Sie den Pixel-Container unabhängig
+        pixelContainer.style.position = 'fixed';  // Ändern Sie dies zu 'absolute', wenn Sie möchten, dass es mit der Seite scrollt
+        pixelContainer.style.top = '0';
+        pixelContainer.style.left = '0';
+        pixelContainer.style.width = '100%';
+        pixelContainer.style.height = headerHeight + 'px';
+        pixelContainer.style.overflow = 'hidden';
+        pixelContainer.style.pointerEvents = 'none';
+
+        initializeHeaderPixels(pixelContainer, headerWidth, headerHeight);
     }
 
-    let lastScrollY = window.scrollY;
-    let scrollIntensity = 0;
-    let scrollDirection = 0;
+    function initializeHeaderPixels(container, width, height) {
+        const pixelSize = 10;
+        const disappearThreshold = height - 20;
+        const fullDisappearThreshold = height - 10;
+        const pixels = [];
 
-    function updateHeaderPixels() {
-        pixels.forEach(pixel => {
-            const state = pixel.element.dataset.state;
-            const scrollFactor = scrollIntensity;
+        const columns = Math.floor(width / pixelSize);
+        const rows = Math.floor(height / pixelSize);
 
-            if (scrollDirection > 0 && state === 'static' && Math.random() < 0.02 * scrollFactor) {
-                pixel.element.dataset.state = 'moving';
-                pixel.speed = (1 + Math.random()).toString();
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < columns; x++) {
+                const pixel = createPixel(container, { 
+                    top: y * pixelSize, 
+                    left: x * pixelSize,
+                    size: pixelSize,
+                    isFooterPixel: true,
+                    color: getRandomColor()
+                });
+
+                pixel.element.dataset.originalTop = pixel.top;
+                pixel.element.dataset.originalLeft = pixel.left;
+                pixel.element.dataset.state = 'static';
+                pixels.push(pixel);
             }
+        }
 
-            if (scrollDirection < 0 && state !== 'static' && Math.random() < 0.01 * scrollFactor) {
-                pixel.element.dataset.state = 'returning';
-                pixel.element.style.opacity = '1';
-            }
+        let lastScrollY = window.scrollY;
+        let scrollIntensity = 0;
+        let scrollDirection = 0;
 
-            if (state === 'moving' || state === 'returning') {
-                let vy = parseFloat(pixel.speed);
-                let y = parseFloat(pixel.element.style.top);
+        function updateHeaderPixels() {
+            pixels.forEach(pixel => {
+                const state = pixel.element.dataset.state;
+                const scrollFactor = scrollIntensity;
 
-                if (state === 'returning') {
-                    const targetY = parseFloat(pixel.element.dataset.originalTop);
-                    vy = (targetY - y) * 0.1;
-                    
-                    if (Math.abs(y - targetY) < 0.5) {
-                        pixel.element.style.top = `${targetY}px`;
-                        pixel.element.dataset.state = 'static';
-                        vy = 0;
+                if (scrollDirection > 0 && state === 'static' && Math.random() < 0.02 * scrollFactor) {
+                    pixel.element.dataset.state = 'moving';
+                    pixel.speed = (1 + Math.random()).toString();
+                }
+
+                if (scrollDirection < 0 && state !== 'static' && Math.random() < 0.01 * scrollFactor) {
+                    pixel.element.dataset.state = 'returning';
+                    pixel.element.style.opacity = '1';
+                }
+
+                if (state === 'moving' || state === 'returning') {
+                    let vy = parseFloat(pixel.speed);
+                    let y = parseFloat(pixel.element.style.top);
+
+                    if (state === 'returning') {
+                        const targetY = parseFloat(pixel.element.dataset.originalTop);
+                        vy = (targetY - y) * 0.1;
+                        
+                        if (Math.abs(y - targetY) < 0.5) {
+                            pixel.element.style.top = `${targetY}px`;
+                            pixel.element.dataset.state = 'static';
+                            vy = 0;
+                        }
+                    } else {
+                        vy += 0.05;
                     }
-                } else {
-                    vy += 0.05;
+
+                    y += vy;
+
+                    if (y > disappearThreshold && y <= fullDisappearThreshold) {
+                        const fadeProgress = (y - disappearThreshold) / (fullDisappearThreshold - disappearThreshold);
+                        pixel.element.style.opacity = (1 - fadeProgress).toString();
+                    } else if (y > fullDisappearThreshold) {
+                        pixel.element.style.opacity = '0';
+                        pixel.element.dataset.state = 'hidden';
+                    }
+
+                    pixel.element.style.top = `${y}px`;
+                    pixel.speed = vy.toString();
                 }
+            });
+            requestAnimationFrame(updateHeaderPixels);
+        }
 
-                y += vy;
+        updateHeaderPixels();
 
-                if (y > disappearThreshold && y <= fullDisappearThreshold) {
-                    const fadeProgress = (y - disappearThreshold) / (fullDisappearThreshold - disappearThreshold);
-                    pixel.element.style.opacity = (1 - fadeProgress).toString();
-                } else if (y > fullDisappearThreshold) {
-                    pixel.element.style.opacity = '0';
-                    pixel.element.dataset.state = 'hidden';
-                }
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            const scrollDelta = currentScrollY - lastScrollY;
+            
+            scrollDirection = Math.sign(scrollDelta);
+            scrollIntensity = Math.min(Math.abs(scrollDelta) / 10, 5);
+            
+            setTimeout(() => {
+                scrollIntensity = Math.max(scrollIntensity - 0.5, 0);
+                if (scrollIntensity === 0) scrollDirection = 0;
+            }, 100);
 
-                pixel.element.style.top = `${y}px`;
-                pixel.speed = vy.toString();
-            }
+            lastScrollY = currentScrollY;
         });
-        requestAnimationFrame(updateHeaderPixels);
     }
-
-    updateHeaderPixels();
-
-    window.addEventListener('scroll', () => {
-        const currentScrollY = window.scrollY;
-        const scrollDelta = currentScrollY - lastScrollY;
-        
-        scrollDirection = Math.sign(scrollDelta);
-        scrollIntensity = Math.min(Math.abs(scrollDelta) / 10, 5);
-        
-        setTimeout(() => {
-            scrollIntensity = Math.max(scrollIntensity - 0.5, 0);
-            if (scrollIntensity === 0) scrollDirection = 0;
-        }, 100);
-
-        lastScrollY = currentScrollY;
-    });
-}
      
        
 });
