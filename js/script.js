@@ -1,39 +1,41 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Laden der Komponenten
-    loadComponent('header', 'components/header.html', 'css/header.css');
-    loadComponent('pixel-background', 'components/pixel-background.html');
-    loadComponent('cube', 'components/cube.html', 'css/cube.css');
-    loadComponent('footer', 'components/footer.html', 'css/footer.css');
+    let potentialPixelColors = []
 
-    // Funktion zum Laden von HTML-Dateien
-    function loadComponent(id, file, cssFile) {
-        fetch(file)
+    function updatePotentialPixelColors() {
+        const rootStyles = getComputedStyle(document.body);
+        potentialPixelColors = [
+            rootStyles.getPropertyValue('--primary-color').trim(),
+            rootStyles.getPropertyValue('--secondary-color').trim(),
+            rootStyles.getPropertyValue('--accent-color').trim(),
+            rootStyles.getPropertyValue('--text-color').trim()
+        ];
+    }
+
+    updatePotentialPixelColors();
+
+    const components = [
+        { id: 'header', html: 'components/header.html', initFunc: initializeHeader },
+        { id: 'pixel-background', html: 'components/pixel-background.html', initFunc: initializePixels },
+        { id: 'cube', html: 'components/cube.html', css: 'css/cube.css', initFunc: initializeCube },
+        { id: 'footer', html: 'components/footer.html', initFunc: initializeFooter }
+    ];
+
+    // Load components
+    components.forEach(loadComponent);
+
+
+    // Load common CSS files for all components (if any) 
+    function loadComponent({ id, html, css, initFunc }) {
+        fetch(html)
             .then(response => response.text())
             .then(data => {
                 document.getElementById(id).innerHTML = data;
-
-                // CSS-Datei laden, falls angegeben
-                if (cssFile) {
-                    loadCSS(cssFile);
-                }
-
-                switch (id) {
-                    case 'pixel-background':
-                        initializePixels();
-                        break;
-                    case 'cube':
-                        initializeCube();
-                        break;
-                    case 'footer':
-                        moveFooter();
-                        break;
-                    default:
-                        break;
-                }
+                if (css) loadCSS(css);
+                if (initFunc) initFunc();
             });
     }
 
-    // Funktion zum Laden von CSS-Dateien
+    // Load CSS file for a component (if any)
     function loadCSS(file) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -41,255 +43,414 @@ document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(link);
     }
 
-    // Pixel-Farbe generieren
-    function getRandomColor() {
-        const letters = '0123456789ABCDEF';
-        let color = '#';
-        for (let i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
-        }
-        return color;
+    // Function to get a random color from the current theme
+    function getRandomColorFromTheme() {
+        return potentialPixelColors[Math.floor(Math.random() * potentialPixelColors.length)];
     }
 
-    // Hintergrund generieren
-    function initializePixels() {
-        const pixelContainer = document.getElementById('pixel-container');
-        const numberOfPixels = 100; // Anzahl der Pixel kann hier angepasst werden
+    // Create a pixel element
+    function createPixel(container, options = {}) {
+        let index = Math.floor(Math.random()*4)
+        // Default object options
+        const {
+            color = potentialPixelColors[index], 
+            top = Math.random() * window.innerHeight,
+            left = Math.random() * window.innerWidth,
+            speed = (Math.random() * 100 + 1).toFixed(2),
+            isFooterPixel = false
+        } = options;
 
-        // Pixel erstellen
-        const pixels = createPixels(pixelContainer, numberOfPixels);
+        // Create pixel element
+        const pixel = document.createElement('div');
+        pixel.setAttribute("colorIndex", index)
+        pixel.className = isFooterPixel ? 'footer-pixel' : 'pixel';
+        pixel.style.cssText = `
+            background-color: ${color};
+            top: ${top}px;
+            left: ${left}px;
+        `;
 
-        // FPS überprüfen und Anzahl der Pixel anpassen	
-        adjustPixelCount(pixels);
+        container.appendChild(pixel);
 
-        // Scroll-Event für Pixel-Bewegung
-        let lastScrollTop = 0;
-
-        window.addEventListener('scroll', () => {
-            const scrollTop = window.scrollY || document.documentElement.scrollTop;
-            const scrollDirection = scrollTop > lastScrollTop ? 1 : -1; // 1 für nach unten, -1 für nach oben
-            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop; // Für Mobile oder negative Werte
-
-            pixels.forEach(pixel => {
-                const speed = pixel.speed;
-                pixel.top += speed * scrollDirection;
-
-                if (pixel.top > window.innerHeight) {
-                    // Wenn der Pixel unten angekommen ist, nach oben zurücksetzen
-                    pixel.top = -11; // <-11px damit er leicht außerhalb des sichtbaren Bereichs beginnt
-                } else if (pixel.top < -11) {
-                    // Wenn der Pixel oben angekommen ist, nach unten zurücksetzen
-                    pixel.top = window.innerHeight;
-                }
-
-                pixel.element.style.top = pixel.top + 'px';
-
-            });
-        });
+        return { element: pixel, top, left, speed };
     }
 
-    // Pixel erstellen
-    function createPixels(pixelContainer, numberOfPixels) {
-        const pixels = [];
-
-        for (let i = 0; i < numberOfPixels; i++) {
-            const pixel = document.createElement('div');
-            pixel.className = 'pixel';
-            pixel.style.position = 'absolute';
-            pixel.style.backgroundColor = getRandomColor();
-
-            const top = Math.random() * window.innerHeight;
-            const left = Math.random() * window.innerWidth;
-            const speed = (Math.random() * 100 + 1).toFixed(2);
-
-            pixel.style.top = top + 'px';
-            pixel.style.left = left + 'px';
-
-            pixels.push({ element: pixel, top, left, speed });
-            pixelContainer.appendChild(pixel);
-        }
-
-        return pixels;
-    }
-
-    //Anzahl Pixel auf Endgerät anpassen
-    function adjustPixelCount(pixels) {
-        const tragetFPS = 60;
+    // Adjust element count based on target FPS
+    function adjustElementCount(elements, targetFPS, createFunc, removeFunc) {
         let lastTime = performance.now();
         let frame = 0;
 
         function checkFPS() {
             frame++;
-            const currenTime = performance.now();
-            const elapsed = currenTime - lastTime;
+            const currentTime = performance.now();
+            const elapsed = currentTime - lastTime;
             if (elapsed > 1000) {
-                const fps = frame * 1000 / elapsed;
+                const fps = (frame * 1000) / elapsed;
                 console.log(`FPS: ${fps}`);
-                if (fps < tragetFPS) {
-                    // Bildwiderholungsrate ist zu niedrig, Anzahl Pixel reduzieren
-                    const newNumberOfPixels = Math.max(pixels.length - 1, 0);
-                    console.log(`Reducing pixel count to ${newNumberOfPixels}`);
-                    removeExcessPixels(pixels, newNumberOfPixels);
+                if (fps < targetFPS) {
+                    const newCount = Math.max(elements.length - 1, 0);
+                    console.log(`Reducing element count to ${newCount}`);
+                    removeFunc(elements, newCount);
+                } else if (fps > targetFPS + 5 && elements.length < 100) {
+                    console.log(`Increasing element count to ${elements.length + 1}`);
+                    elements.push(createFunc());
                 }
-                frame;
-                lastTime = currenTime;
+                frame = 0;
+                lastTime = currentTime;
             }
             requestAnimationFrame(checkFPS);
         }
         requestAnimationFrame(checkFPS);
     }
 
-    // Überzählige Pixel entfernen
-    function removeExcessPixels(pixels, newNumberOfPixels) {
-        const excess = pixels.length - newNumberOfPixels;
-        for(let i = 0; i < excess; i++) {
-            const pixel = pixels.pop();
-            pixel.element.remove();
-        }
+    // Initialize pixel background
+    function initializePixels() {
+        const pixelContainer = document.getElementById('pixel-container');
+        const pixels = Array.from({ length: 100 }, () => createPixel(pixelContainer));
+
+        adjustElementCount(pixels, 60, () => createPixel(pixelContainer), removeExcessElements);
+
+        let lastScrollTop = 0;
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY || document.documentElement.scrollTop;
+            const scrollDirection = scrollTop > lastScrollTop ? 1 : -1;
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+
+            pixels.forEach(updatePixelPosition(scrollDirection));
+        });
     }
 
-    // Cube generieren
+    // Update pixel position based on scroll direction
+    function updatePixelPosition(scrollDirection) {
+        return pixel => {
+            pixel.top += parseFloat(pixel.speed) * scrollDirection;
+            if (pixel.top > window.innerHeight) {
+                pixel.top = -11;
+            } else if (pixel.top < -11) {
+                pixel.top = window.innerHeight;
+            }
+            pixel.element.style.top = `${pixel.top}px`;
+        };
+    }
+
+    // Remove excess elements
+    function removeExcessElements(elements, newCount) {
+        elements.splice(newCount).forEach(element => element.element.remove());
+    }
+
+    // Initialize cube
     function initializeCube() {
         const cube = document.querySelector('.cube');
         const container = document.querySelector('.container');
-        let scrollRotation = 0;
         let maxScroll = document.body.scrollHeight - window.innerHeight;
-        let ticking = false;
 
-        function updateElements(scrollPercent) {
-            scrollRotation = scrollPercent * 360;
+        const updateCube = throttle(() => {
+            const scrollPercent = window.scrollY / maxScroll;
+            const scrollRotation = scrollPercent * 360;
             cube.style.transform = `rotateX(${scrollRotation}deg) rotateY(${scrollRotation}deg)`;
             container.style.transform = `translateY(${scrollPercent * 100}vh)`;
-        }
+        });
 
-        function onScoll() {
-            if(!ticking) {
-                requestAnimationFrame(() => {
-                    const scrollPercent = window.scrollY / maxScroll;
-                    updateElements(scrollPercent);
-                    ticking = false;
-                });
-                ticking = true;
-            }
-        }
-
-        window.addEventListener('scroll', onScoll, { passive: true });
+        window.addEventListener('scroll', updateCube, { passive: true });
         window.addEventListener('resize', () => {
             maxScroll = document.body.scrollHeight - window.innerHeight;
         });
 
-        onScoll();
+        updateCube();
     }
 
-    function moveFooter() {
-        const footer = document.querySelector('.footer');
+    // Initialize footer
+    function initializeFooter() {
+        const footer = document.querySelector('#footer');
+        const footerPixelContainer = footer.querySelector('.footer-pixel-container');
+        const glassmorphismFooter = footer.querySelector('.glassmorphism-footer');
+
         const footerHeight = footer.offsetHeight;
         const initialPosition = -footerHeight;
         const visiblePosition = 0;
-        const slowFactor = 20; // Je größer der Wert, desto langsamer bewegt sich der Footer
+        const slowFactor = 20;
 
-        let ticking = false;
-        let lastScrollY = 0;
         let footerPosition = initialPosition;
-
         footer.style.bottom = `${initialPosition}px`;
 
-        function updateFooter() {
+        const updateFooter = throttle(() => {
             const windowHeight = window.innerHeight;
             const maxScroll = document.body.scrollHeight - windowHeight;
             const scrollY = window.scrollY;
 
-            // Berechnung der Footer-Position
             footerPosition = Math.min(visiblePosition, initialPosition + scrollY / slowFactor);
 
-            // Setzen der Footer-Position
-            footer.style.bottom = `${footerPosition}px`;
+            // Bewegen Sie beide Container gleichzeitig
+            footerPixelContainer.style.bottom = `${footerPosition}px`;
+            glassmorphismFooter.style.bottom = `${footerPosition}px`;
 
-            // Wenn der Footer sichtbar wird, fülle ihn relativ zum Scroll-Event mit Pixeln
-            updateFooterPixels(footer, scrollY, maxScroll);
+            updateFooterPixels(footerPixelContainer, scrollY, maxScroll);
 
-            // Wenn der Footer komplett sichtbar ist, bleibt er fixiert am unteren Rand
             if (scrollY >= maxScroll - footerHeight) {
-                footer.style.bottom = `${visiblePosition}px`;
+                footerPixelContainer.style.bottom = `${visiblePosition}px`;
+                glassmorphismFooter.style.bottom = `${visiblePosition}px`;
             }
+        });
 
-            ticking = false;
-        }
-
-        window.addEventListener('scroll', () => {
-            lastScrollY = window.scrollY;
-            if (!ticking) {
-                requestAnimationFrame(updateFooter);
-                ticking = true;
-            }
-
-        }, { passive: true });
-
-        // Initialisierung
+        window.addEventListener('scroll', updateFooter, { passive: true });
         updateFooter();
     }
 
-    function updateFooterPixels(footer, scrollY) {
-        const pixelSize = 10; // Größe der Pixel
-        const minDistanceFromTop = 10; // Mindestabstand von der oberen Kante des Footers
-        const pixelDensity = Math.floor(scrollY / 25); // Anzahl der Pixel relativ zur Scroll-Position
+    function updateFooterPixels(footerPixelContainer, scrollY) {
+        const pixelSize = 10;
+        const minDistanceFromTop = 10;
+        const pixelDensity = Math.floor(scrollY / 25);
 
-        // Bestehende Pixel überprüfen und entfernen, wenn die Scroll-Position abnimmt
-        const existingPixels = Array.from(footer.getElementsByClassName('footer-pixel'));
-        const excessPixels = existingPixels.length - pixelDensity;
+        const existingPixels = Array.from(footerPixelContainer.getElementsByClassName('footer-pixel'));
+        const pixelDifference = pixelDensity - existingPixels.length;
 
-        if (excessPixels > 0) {
-            // Entferne überschüssige Pixel
-            for (let i = 0; i < excessPixels; i++) {
-                footer.removeChild(existingPixels[i]);
+        if (pixelDifference > 0) {
+            for (let i = 0; i < pixelDifference; i++) {
+                createPixel(footerPixelContainer, {
+                    top: minDistanceFromTop + Math.random() * (footerPixelContainer.offsetHeight - minDistanceFromTop - pixelSize),
+                    left: Math.floor(Math.random() * Math.floor(footerPixelContainer.offsetWidth / pixelSize)) * pixelSize,
+                    speed: 0,
+                    isFooterPixel: true
+                });
             }
-        } else {
-            // Füge neue Pixel hinzu
-            const newPixels = Math.abs(excessPixels);
-            for (let i = 0; i < newPixels; i++) {
-                const pixel = document.createElement('div');
-                pixel.classList.add('footer-pixel');
-                pixel.style.backgroundColor = getRandomColor();
-                pixel.style.width = `${pixelSize}px`;
-                pixel.style.height = `${pixelSize}px`;
-
-                // Zufällige horizontale Position im Footer
-                const left = Math.floor(Math.random() * Math.floor(footer.offsetWidth / pixelSize)) * pixelSize;
-                pixel.style.left = `${left}px`;
-                // Setze die `top`-Position, sodass das Pixel mindestens 10px unterhalb der Oberkante des Footers erscheint
-                const top = minDistanceFromTop + Math.random() * (footer.offsetHeight - minDistanceFromTop - pixelSize);
-                pixel.style.top = `${top}px`;
-
-                footer.appendChild(pixel);
+        } else if (pixelDifference < 0) {
+            for (let i = 0; i < -pixelDifference; i++) {
+                const pixel = existingPixels.pop();
+                if (pixel) pixel.remove();
             }
         }
 
-        // Pixel fallen und stapeln sich, sobald sie andere Pixel oder den Boden des Footers erreichen
-        existingPixels.forEach(pixel => {
+        existingPixels.forEach(updateFooterPixelPosition(footerPixelContainer, pixelSize));
+    }
+
+    function updateFooterPixelPosition(footer, pixelSize) {
+        return pixel => {
             let top = parseFloat(pixel.style.top);
-
-            // Berechne das nächste potenzielle Pixel, auf das dieses Pixel fallen könnte
             const left = parseFloat(pixel.style.left);
-            const otherPixelsBelow = existingPixels.filter(p => parseFloat(p.style.left) === left && parseFloat(p.style.top) > top);
+            const otherPixelsBelow = Array.from(footer.getElementsByClassName('footer-pixel')).filter(p =>
+                parseFloat(p.style.left) === left && parseFloat(p.style.top) > top
+            );
 
-            // Finde das niedrigste Pixel auf der gleichen horizontalen Position
-            const lowestPixelBelow = otherPixelsBelow.length > 0 ? Math.min(...otherPixelsBelow.map(p => parseFloat(p.style.top))) : footer.offsetHeight;
+            const lowestPixelBelow = otherPixelsBelow.length > 0
+                ? Math.min(...otherPixelsBelow.map(p => parseFloat(p.style.top)))
+                : footer.offsetHeight;
 
-            // Pixel fallen, bis sie entweder den Boden oder ein anderes Pixel erreichen
             const fallDistance = Math.min(lowestPixelBelow - pixelSize, footer.offsetHeight - pixelSize);
 
-            if (top + 2 <= fallDistance) {
-                // Pixel fällt weiter
-                top += 2; // Geschwindigkeit des Falls
-            } else {
-                // Pixel erreicht den Boden oder ein anderes Pixel und bleibt gestapelt
-                top = fallDistance;
-            }
-
+            top = top + 2 <= fallDistance ? top + 2 : fallDistance;
             pixel.style.top = `${top}px`;
+        };
+    }
+
+    function throttle(func, limit = 16) {
+        let inThrottle;
+        return function () {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+
+    function updatePixelColors() {
+        // Header-Pixel
+        const headerPixels = document.querySelectorAll('.header-pixel, .pixel-header-attribute');
+        headerPixels.forEach(pixel => {
+            pixel.style.backgroundColor = pixel.getAttribute("colorIndex") ? potentialPixelColors[parseInt(pixel.getAttribute("colorIndex"))] : getRandomColorFromTheme();
         });
 
-        lastScrollY = scrollY;
+        // Footer-Pixel
+        const footerPixels = document.querySelectorAll('.footer-pixel');
+        footerPixels.forEach(pixel => {
+            pixel.style.backgroundColor = pixel.getAttribute("colorIndex") ? potentialPixelColors[parseInt(pixel.getAttribute("colorIndex"))] : getRandomColorFromTheme();
+        });
+
+        // Hintergrund-Pixel
+        const backgroundPixels = document.querySelectorAll('.pixel');
+        backgroundPixels.forEach(pixel => {
+            pixel.style.backgroundColor = pixel.getAttribute("colorIndex") ? potentialPixelColors[parseInt(pixel.getAttribute("colorIndex"))] : getRandomColorFromTheme();
+        });
     }
+
+
+    function initializeHeader() {
+        const header = document.querySelector('.glassmorphism-header');
+        const pixelContainer = document.querySelector('.header-pixel-container');
+
+        if (!header || !pixelContainer) {
+            console.error('Header oder Pixel-Container-Element nicht gefunden');
+            return;
+        }
+
+        header.style.height = '80px';
+        const headerHeight = header.offsetHeight;
+        const headerWidth = header.offsetWidth;
+        const containerPadding = 10;
+
+        // Positionieren Sie den Pixel-Container unabhängig
+        pixelContainer.style.position = 'fixed';  // Ändern Sie dies zu 'absolute', wenn Sie möchten, dass es mit der Seite scrollt
+        pixelContainer.style.top = '0';
+        pixelContainer.style.left = '0';
+        pixelContainer.style.width = '100%';
+        pixelContainer.style.height = `${headerHeight - containerPadding}px`;
+        pixelContainer.style.overflow = 'hidden';
+        pixelContainer.style.pointerEvents = 'none';
+
+        // Hier rufen wir die neue initializeHeaderPixels-Funktion auf
+        initializeHeaderPixels(pixelContainer, headerWidth, headerHeight);
+
+        // Theme-Dropdown-Logik
+        const themeLinks = document.querySelectorAll('.theme-dropdown-content a');
+        themeLinks.forEach(link => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const selectedTheme = event.target.dataset.theme;
+                const themes = ['theme-default', 'theme-dark', 'theme-monochromatic', 'theme-vaporwave', 'theme-colorful', 'theme-pastel'];
+                document.body.classList.remove(...themes);
+                document.body.classList.add(`theme-${selectedTheme}`);
+                updatePotentialPixelColors();
+                updatePixelColors();
+
+            });
+        });
+    }
+
+    function initializeHeaderPixels(container, width, height) {
+        const pixelSize = 10;
+        const containerPadding = 10; // Padding am unteren Rand
+        const containerHeight = height - containerPadding;
+        let pixels = [];
+        const columns = Math.floor(width / pixelSize);
+        const rows = Math.floor(containerHeight / pixelSize);
+
+        // Erstelle ein 2D-Array zur Verfolgung der Pixelpositionen
+        const pixelGrid = Array(columns).fill().map(() => Array(rows).fill(null));
+
+        function createInitialPixels() {
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < columns; x++) {
+                    const pixel = createPixel(container, {
+                        top: y * pixelSize,
+                        left: x * pixelSize,
+                    });
+
+                    pixel.element.dataset.originalX = x;
+                    pixel.element.dataset.originalY = y;
+                    pixel.element.dataset.currentX = x;
+                    pixel.element.dataset.currentY = y;
+                    pixel.element.dataset.state = 'static';
+                    pixels.push(pixel);
+                    pixelGrid[x][y] = pixel;
+                }
+            }
+        }
+
+        createInitialPixels();
+
+        let lastScrollY = window.scrollY;
+        let scrollIntensity = 0;
+        let scrollDirection = 0;
+
+        function updateHeaderPixels() {
+            if (scrollDirection > 0) {
+                // Abwärts-Scrollen: Lass Pixel fallen
+                const bottomRow = pixels.filter(p => parseInt(p.element.dataset.currentY) === rows - 1 && p.element.dataset.state === 'static');
+                const fallingCandidates = bottomRow.length > 0 ? bottomRow :
+                    pixels.filter(p => {
+                        const x = parseInt(p.element.dataset.currentX);
+                        const y = parseInt(p.element.dataset.currentY);
+                        return y < rows - 1 && pixelGrid[x][y + 1] === null && p.element.dataset.state === 'static';
+                    });
+
+                // Reduziere die Anzahl der fallenden Pixel
+                const maxFallingPixels = 3; // Maximale Anzahl der Pixel, die gleichzeitig fallen können
+                const pixelsToFall = fallingCandidates
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, Math.min(
+                        maxFallingPixels,
+                        Math.ceil(fallingCandidates.length * scrollIntensity * 0.05)
+                    ));
+
+                pixelsToFall.forEach(pixel => {
+                    const x = parseInt(pixel.element.dataset.currentX);
+                    const y = parseInt(pixel.element.dataset.currentY);
+                    pixel.element.dataset.state = 'falling';
+                    pixelGrid[x][y] = null;
+                });
+            } else if (scrollDirection < 0) {
+                // Aufwärts-Scrollen: Füge neue Pixel hinzu
+                const emptyTopSlots = pixelGrid.map((column, x) => {
+                    const y = column.findIndex(pixel => pixel === null);
+                    return y !== -1 ? { x, y } : null;
+                }).filter(slot => slot !== null);
+
+                // Reduziere die Anzahl der neuen Pixel
+                const maxNewPixels = 3; // Maximale Anzahl der neuen Pixel, die gleichzeitig hinzugefügt werden können
+                const slotsToFill = emptyTopSlots
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, Math.min(
+                        maxNewPixels,
+                        Math.ceil(emptyTopSlots.length * scrollIntensity * 0.05)
+                    ));
+
+                slotsToFill.forEach(({ x, y }) => {
+                    const newPixel = createPixel(container, {
+                        top: y * pixelSize,
+                        left: x * pixelSize,
+                        size: pixelSize,
+                        color: getRandomColorFromTheme()
+                    });
+
+                    newPixel.element.dataset.originalX = x;
+                    newPixel.element.dataset.originalY = y;
+                    newPixel.element.dataset.currentX = x;
+                    newPixel.element.dataset.currentY = y;
+                    newPixel.element.dataset.state = 'static';
+                    pixels.push(newPixel);
+                    pixelGrid[x][y] = newPixel;
+                });
+            }
+
+            // Aktualisiere Pixel-Positionen
+            pixels = pixels.filter(pixel => {
+                const state = pixel.element.dataset.state;
+                if (state === 'falling') {
+                    let y = parseFloat(pixel.element.style.top);
+                    y += scrollIntensity * 2;
+                    if (y >= height) {
+                        // Pixel ist aus dem Sichtfeld gefallen, entferne es
+                        pixel.element.remove();
+                        return false;
+                    }
+                    pixel.element.style.top = `${y}px`;
+                    pixel.element.dataset.currentY = Math.floor(y / pixelSize);
+                }
+                return true;
+            });
+
+            requestAnimationFrame(updateHeaderPixels);
+        }
+
+        updateHeaderPixels();
+
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            const scrollDelta = currentScrollY - lastScrollY;
+
+            scrollDirection = Math.sign(scrollDelta);
+            scrollIntensity = Math.min(Math.abs(scrollDelta) / 10, 5);
+
+            setTimeout(() => {
+                scrollIntensity = Math.max(scrollIntensity - 0.5, 0);
+                if (scrollIntensity === 0) scrollDirection = 0;
+            }, 100);
+
+            lastScrollY = currentScrollY;
+        });
+    }
+
 
 });
