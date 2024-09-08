@@ -246,7 +246,7 @@ nav a.active::before {
 
 /* Theme Dropdown */
 .theme-dropdown {
-    top: 70px;
+    top: 80px;
     left: 0;
     position: absolute;   /* Fixiert die Position des Buttons */
     bottom: 0;         /* Am unteren Rand */
@@ -297,10 +297,12 @@ nav a.active::before {
 
 /* Responsive Styling */
 @media (max-width: 768px) {
+    .theme-dropdown {
+        top: 70px;
+    }
     
     nav {
-        flex-direction: column;
-        align-items: center;
+
         overflow-x: auto;
         overflow-y: hidden;
     }
