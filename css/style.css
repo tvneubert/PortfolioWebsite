@@ -56,9 +56,9 @@ body {
     transition: all 0.3s ease;
     line-height: 1.6;
     margin: 0;
-    height: 500vh; /* Erhöhte Höhe für Scrollen */
+    height: 500vh;
     overflow-x: hidden;
-    padding-bottom: 100px; /* Höhe des Footers */
+    padding-bottom: 100px;
 }
 
 .container {
@@ -67,11 +67,11 @@ body {
     background-color: rgba(255, 255, 255, 0);
     padding: 20px;
     border-radius: 10px;
-    height: 100vh; /* Volle Höhe für die Cube-Container */
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    perspective: 1000px; /* Perspektive für 3D-Effekt */
+    perspective: 1000px;
 }
 
 h1 {
@@ -202,7 +202,7 @@ nav a {
     display: flex;
     align-items: center;
     height: 100%;
-    text-shadow: 0.1px 0.1px 0px #000, -0.1px 0.1px 0px #000, 0.1px -0.1px 0px #000, -0.1px -0.1px 0px #000;
+    text-shadow: 0.01px 0.01px 0px #000, -0.01px 0.01px 0px #000, 0.01px -0.01px 0px #000, -0.01px -0.01px 0px #000;
 }
 
 .pixel-header-attribute {
@@ -225,7 +225,7 @@ nav a:hover,
 nav a.active {
     color: var(--primary-color);
     text-shadow: 0 0 10px var(--primary-color);
-    text-shadow: 0.1px 0.1px 0px #000, -0.1px 0.1px 0px #000, 0.1px -0.1px 0px #000, -0.1px -0.1px 0px #000;
+    text-shadow: 0.01px 0.01px 0px #000, -0.01px 0.01px 0px #000, 0.01px -0.01px 0px #000, -0.01px -0.1px 0px #000;
 }
 
 nav a::before {
@@ -251,9 +251,9 @@ nav a.active::before {
 .theme-dropdown {
     top: 80px;
     left: 0;
-    position: absolute;   /* Fixiert die Position des Buttons */
-    bottom: 0;         /* Am unteren Rand */
-    right: 10px;           /* Am linken Rand */
+    position: absolute;   
+    bottom: 0;
+    right: 10px;
     z-index: 1000; 
 }
 
@@ -339,3 +339,80 @@ nav a.active::before {
     border-radius: 0.8px;
     z-index: 1000;
 }
+
+.rocket {
+    width: 50px;
+    height: 100px;
+    position: fixed;
+    transform-style: preserve-3d;
+    transition: transform 0.1s ease-out;
+    pointer-events: none;
+    z-index: 9999;
+  }
+  
+  .rocket .body {
+    width: 100%;
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 50% 50% 20% 20%;
+    position: absolute;
+    transform: translateZ(12px);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--secondary-color);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+  
+  .rocket .window {
+    width: 20px;
+    height: 20px;
+    background: var(--secondary-color);
+    border-radius: 50%;
+    position: absolute;
+    top: 25px;
+    left: 15px;
+    transform: translateZ(15px);
+    border: 1px solid var(--text-color);
+  }
+  
+  .rocket .fin {
+    position: absolute;
+    bottom: 0;
+    width: 25px;
+    height: 40px;
+    background: var(--accent-color);
+    backdrop-filter: blur(5px);
+    border: 1px solid var(--secondary-color);
+  }
+  
+  .rocket .fin-left {
+    left: -12px;
+    transform: rotateY(-60deg);
+  }
+  
+  .rocket .fin-right {
+    right: -12px;
+    transform: rotateY(60deg);
+  }
+  
+  .rocket .flame {
+    width: 30px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--secondary-color), var(--accent-color));
+    position: absolute;
+    bottom: -40px;
+    left: 10px;
+    clip-path: polygon(
+      50% 0%, 
+      0% 100%, 
+      30% 90%,
+      50% 100%, 
+      70% 90%, 
+      100% 100%
+    );
+    animation: flicker 0.2s infinite alternate;
+  }
+  
+  @keyframes flicker {
+    0% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }

@@ -19,11 +19,53 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 'header', html: 'components/header.html', initFunc: initializeHeader },
         { id: 'pixel-background', html: 'components/pixel-background.html', initFunc: initializePixels },
         { id: 'cube', html: 'components/cube.html', css: 'css/cube.css', initFunc: initializeCube },
-        { id: 'footer', html: 'components/footer.html', initFunc: initializeFooter }
+        { id: 'footer', html: 'components/footer.html', initFunc: initializeFooter },
+        { id: 'rocket', html: 'components/rocket.html', initFunc: addRocketCursor }
     ];
 
     // Load components
     components.forEach(loadComponent);
+
+    function addRocketCursor() {
+        const rocket = document.querySelector('.rocket');
+
+        let currentX = 0, currentY = 0, targetX = 0, targetY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            const { clientX, clientY } = e;
+            targetX = clientX - rocket.offsetWidth / 2;
+            targetY = clientY - rocket.offsetHeight / 2;
+        });
+
+        function animate() {
+            currentX += (targetX - currentX) * 0.1;
+            currentY += (targetY - currentY) * 0.1;
+
+            const dx = targetX - currentX;
+            const dy = targetY - currentY;
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            rocket.style.transform = `
+                translate(${currentX}px, ${currentY}px)
+                rotate(${angle + 90}deg)
+            `;
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    }
+
+    function updateRocketColors() {
+        const rocket = document.querySelector('.rocket');
+        if (rocket) {
+            rocket.querySelector('.body').style.backgroundColor = potentialPixelColors[0];
+            rocket.querySelector('.window').style.backgroundColor = potentialPixelColors[1];
+            rocket.querySelector('.fin-left').style.backgroundColor = potentialPixelColors[2];
+            rocket.querySelector('.fin-right').style.backgroundColor = potentialPixelColors[2];
+            rocket.querySelector('.flame').style.background = `linear-gradient(to bottom, ${potentialPixelColors[1]}, ${potentialPixelColors[2]})`;
+        }
+    }
 
 
     // Load common CSS files for all components
@@ -281,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('selectedTheme', themeName); 
         updatePotentialPixelColors(); 
         updatePixelColors(); 
+        updateRocketColors();
     }
 
 
