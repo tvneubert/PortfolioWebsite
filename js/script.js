@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     let potentialPixelColors = []
 
+
+
     function updatePotentialPixelColors() {
         const rootStyles = getComputedStyle(document.body);
         potentialPixelColors = [
@@ -24,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     components.forEach(loadComponent);
 
 
-    // Load common CSS files for all components (if any) 
+    // Load common CSS files for all components
     function loadComponent({ id, html, css, initFunc }) {
         fetch(html)
             .then(response => response.text())
@@ -35,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    // Load CSS file for a component (if any)
+    // Load CSS file for a component
     function loadCSS(file) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -50,10 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Create a pixel element
     function createPixel(container, options = {}) {
-        let index = Math.floor(Math.random()*4)
+        let index = Math.floor(Math.random() * 4)
         // Default object options
         const {
-            color = potentialPixelColors[index], 
+            color = potentialPixelColors[index],
             top = Math.random() * window.innerHeight,
             left = Math.random() * window.innerWidth,
             speed = (Math.random() * 100 + 1).toFixed(2),
@@ -180,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             footerPosition = Math.min(visiblePosition, initialPosition + scrollY / slowFactor);
 
-            // Bewegen Sie beide Container gleichzeitig
             footerPixelContainer.style.bottom = `${footerPosition}px`;
             glassmorphismFooter.style.bottom = `${footerPosition}px`;
 
@@ -268,17 +269,31 @@ document.addEventListener('DOMContentLoaded', () => {
             pixel.style.backgroundColor = pixel.getAttribute("colorIndex") ? potentialPixelColors[parseInt(pixel.getAttribute("colorIndex"))] : getRandomColorFromTheme();
         });
 
-        // Hintergrund-Pixel
+        // Background-Pixel
         const backgroundPixels = document.querySelectorAll('.pixel');
         backgroundPixels.forEach(pixel => {
             pixel.style.backgroundColor = pixel.getAttribute("colorIndex") ? potentialPixelColors[parseInt(pixel.getAttribute("colorIndex"))] : getRandomColorFromTheme();
         });
     }
 
+    function setTheme(themeName) {
+        document.body.className = themeName; 
+        localStorage.setItem('selectedTheme', themeName); 
+        updatePotentialPixelColors(); 
+        updatePixelColors(); 
+    }
+
+
 
     function initializeHeader() {
         const header = document.querySelector('.glassmorphism-header');
         const pixelContainer = document.querySelector('.header-pixel-container');
+        const savedTheme = localStorage.getItem('selectedTheme');
+        if (savedTheme) {
+            setTheme(savedTheme); 
+        } else {
+            setTheme('theme-default'); 
+        }
 
         if (!header || !pixelContainer) {
             console.error('Header oder Pixel-Container-Element nicht gefunden');
@@ -290,8 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const headerWidth = header.offsetWidth;
         const containerPadding = 10;
 
-        // Positionieren Sie den Pixel-Container unabhängig
-        pixelContainer.style.position = 'fixed';  // Ändern Sie dies zu 'absolute', wenn Sie möchten, dass es mit der Seite scrollt
+        pixelContainer.style.position = 'fixed';  
         pixelContainer.style.top = '0';
         pixelContainer.style.left = '0';
         pixelContainer.style.width = '100%';
@@ -299,10 +313,11 @@ document.addEventListener('DOMContentLoaded', () => {
         pixelContainer.style.overflow = 'hidden';
         pixelContainer.style.pointerEvents = 'none';
 
-        // Hier rufen wir die neue initializeHeaderPixels-Funktion auf
+
         initializeHeaderPixels(pixelContainer, headerWidth, headerHeight);
 
         // Theme-Dropdown-Logik
+
         const themeLinks = document.querySelectorAll('.theme-dropdown-content a');
         themeLinks.forEach(link => {
             link.addEventListener('click', (event) => {
@@ -311,6 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const themes = ['theme-default', 'theme-dark', 'theme-monochromatic', 'theme-vaporwave', 'theme-colorful', 'theme-pastel'];
                 document.body.classList.remove(...themes);
                 document.body.classList.add(`theme-${selectedTheme}`);
+                setTheme(`theme-${selectedTheme}`);
                 updatePotentialPixelColors();
                 updatePixelColors();
 
@@ -320,13 +336,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initializeHeaderPixels(container, width, height) {
         const pixelSize = 10;
-        const containerPadding = 10; // Padding am unteren Rand
+        const containerPadding = 10; 
         const containerHeight = height - containerPadding;
         let pixels = [];
         const columns = Math.floor(width / pixelSize);
         const rows = Math.floor(containerHeight / pixelSize);
 
-        // Erstelle ein 2D-Array zur Verfolgung der Pixelpositionen
+
         const pixelGrid = Array(columns).fill().map(() => Array(rows).fill(null));
 
         function createInitialPixels() {
@@ -356,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function updateHeaderPixels() {
             if (scrollDirection > 0) {
-                // Abwärts-Scrollen: Lass Pixel fallen
+      
                 const bottomRow = pixels.filter(p => parseInt(p.element.dataset.currentY) === rows - 1 && p.element.dataset.state === 'static');
                 const fallingCandidates = bottomRow.length > 0 ? bottomRow :
                     pixels.filter(p => {
@@ -365,8 +381,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         return y < rows - 1 && pixelGrid[x][y + 1] === null && p.element.dataset.state === 'static';
                     });
 
-                // Reduziere die Anzahl der fallenden Pixel
-                const maxFallingPixels = 3; // Maximale Anzahl der Pixel, die gleichzeitig fallen können
+
+                const maxFallingPixels = 3; 
                 const pixelsToFall = fallingCandidates
                     .sort(() => Math.random() - 0.5)
                     .slice(0, Math.min(
@@ -381,14 +397,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     pixelGrid[x][y] = null;
                 });
             } else if (scrollDirection < 0) {
-                // Aufwärts-Scrollen: Füge neue Pixel hinzu
+
                 const emptyTopSlots = pixelGrid.map((column, x) => {
                     const y = column.findIndex(pixel => pixel === null);
                     return y !== -1 ? { x, y } : null;
                 }).filter(slot => slot !== null);
 
-                // Reduziere die Anzahl der neuen Pixel
-                const maxNewPixels = 3; // Maximale Anzahl der neuen Pixel, die gleichzeitig hinzugefügt werden können
+
+                const maxNewPixels = 3; 
                 const slotsToFill = emptyTopSlots
                     .sort(() => Math.random() - 0.5)
                     .slice(0, Math.min(
@@ -414,14 +430,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Aktualisiere Pixel-Positionen
+
             pixels = pixels.filter(pixel => {
                 const state = pixel.element.dataset.state;
                 if (state === 'falling') {
                     let y = parseFloat(pixel.element.style.top);
                     y += scrollIntensity * 2;
                     if (y >= height) {
-                        // Pixel ist aus dem Sichtfeld gefallen, entferne es
+  
                         pixel.element.remove();
                         return false;
                     }
