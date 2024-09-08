@@ -1,27 +1,27 @@
 :root {
-    --primary-color: #3498db;
-    --secondary-color: #2ecc71;
+    --primary-color: #802392;
+    --secondary-color: #25CED1;
     --background-color: #f0f0f0;
-    --text-color: #333;
-    --accent-color: #e74c3c;
+    --text-color: #006D77;
+    --accent-color: #995FA3;
     --font-size: 16px;
     --spacing: 20px;
 }
 
 body.theme-dark {
-    --primary-color: #3498db;
-    --secondary-color: #2ecc71;
-    --background-color: #1a1a1a;
-    --text-color: #f0f0f0;
-    --accent-color: #e74c3c;
+    --primary-color: #BEB8EB;
+    --secondary-color: #5299D3;
+    --background-color: #000000;
+    --text-color: #2B2D42;
+    --accent-color: #A42CD6;
 }
 
 body.theme-monochromatic {
-    --primary-color: #4a4a4a;
-    --secondary-color: #7a7a7a;
-    --background-color: #f0f0f0;
-    --text-color: #2a2a2a;
-    --accent-color: #0a0a0a;
+    --primary-color: #8F857D;
+    --secondary-color: #DECBB7;
+    --background-color: #F7F0F5;
+    --text-color: #433633;
+    --accent-color: #5C5552;
 }
 
 body.theme-vaporwave {
@@ -33,19 +33,19 @@ body.theme-vaporwave {
 }
 
 body.theme-colorful {
-    --primary-color: #2d00f7;
-    --secondary-color: #ff0099;
-    --background-color: #ffffff;
-    --text-color: #333333;
-    --accent-color: #10ba00;
+    --primary-color: #0B1D51;
+    --secondary-color: #2BC016;
+    --background-color: #F0F7EE;
+    --text-color: #813405;
+    --accent-color: #EF476F;
 }
 
 body.theme-pastel {
-    --primary-color: #ca9bf7;
-    --secondary-color: #ffb3ba;
-    --background-color: #bae1ff;
-    --text-color: #555555;
-    --accent-color: #baffc9;
+    --primary-color: #545E75;
+    --secondary-color: #F9CFF2;
+    --background-color: #EFE9E7;
+    --text-color: #304D6D;
+    --accent-color: #DAE0F2;
 }
 
 /* General styles */
@@ -246,8 +246,12 @@ nav a.active::before {
 
 /* Theme Dropdown */
 .theme-dropdown {
-    position: relative;
-    display: inline-block;
+    top: 70px;
+    left: 0;
+    position: absolute;   /* Fixiert die Position des Buttons */
+    bottom: 0;         /* Am unteren Rand */
+    right: 10px;           /* Am linken Rand */
+    z-index: 1000; 
 }
 
 .theme-dropdown-btn {
@@ -257,24 +261,26 @@ nav a.active::before {
     border: none;
     cursor: pointer;
     font-weight: bold;
-    border-radius: 5px;
+
+    border-bottom-right-radius: 5px;
 }
 
 .theme-dropdown-content {
+    position: absolute;
     display: none;
-    padding-right: 20%;
 
-    background-color: var(--background-color);
+    background: rgba(255, 255, 255, 0.513);
     min-width: 160px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     z-index: 1;
-    border-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
     overflow: hidden;
 }
 
 .theme-dropdown-content a {
     color: var(--text-color);
-    padding: 12px 16px;
+
     text-decoration: none;
     display: block;
     transition: background-color 0.3s ease;
@@ -291,13 +297,16 @@ nav a.active::before {
 
 /* Responsive Styling */
 @media (max-width: 768px) {
+    
     nav {
         flex-direction: column;
         align-items: center;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
     
     .menu-items {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: center;
     }
     
