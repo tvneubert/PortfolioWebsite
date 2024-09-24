@@ -56,7 +56,7 @@ body {
     transition: all 0.3s ease;
     line-height: 1.6;
     margin: 0;
-    height: 500vh;
+    height: 100vh;
     overflow-x: hidden;
     padding-bottom: 100px;
 }
@@ -416,3 +416,66 @@ nav a.active::before {
     0% { opacity: 0.7; }
     100% { opacity: 1; }
   }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    margin: 10px 50px 20px;
+    min-width: 100vh;
+    padding-bottom: 20px;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.3s ease;
+    align-items: center;
+    z-index: 200;
+}
+.glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    z-index: 200;
+}
+.glass-card:hover {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+.glass-card h2 {
+    color: #333;
+    margin-top: 0;
+}
+.glass-card p {
+    color: #444;
+}
+.glass-card img {
+    width: 100%;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+.content-container {
+    width: 100vw;
+    height: 100vh;
+    margin-block-start: 120px; 
+    writing-mode: horizontal-tb;
+    overflow: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.glass-card img {
+    width: 300px;
+    height: 200px;
+    border-radius: 10px;
+    margin-top: 15px;
+}
